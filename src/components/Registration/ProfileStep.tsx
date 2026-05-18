@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   StyleSheet,
   Text,
@@ -113,10 +114,21 @@ type Props = {
   phone: string;
   role: 'customer' | 'transport';
   initialProfile?: ProfileForm;
-  onSubmit: (data: ProfileForm) => void;
+  isSubmitting?: boolean;
+  showDraft?: boolean;
+  submitLabel?: string;
+  onSubmit: (data: ProfileForm) => Promise<void> | void;
 };
 
-function ProfileStep({ phone, role, initialProfile, onSubmit }: Props) {
+function ProfileStep({
+  phone,
+  role,
+  initialProfile,
+  isSubmitting = false,
+  showDraft = true,
+  submitLabel,
+  onSubmit,
+}: Props) {
   const { t } = useTranslation();
   const isTransport = role === 'transport';
 
@@ -474,19 +486,30 @@ function ProfileStep({ phone, role, initialProfile, onSubmit }: Props) {
         visible={listPicker !== null}
       />
 
-      <TouchableOpacity onPress={saveDraft} style={styles.draftBtn}>
-        <Text style={styles.draftText}>
-          {draftSaved ? t('profile.draftSaved') : t('profile.saveDraft')}
-        </Text>
-      </TouchableOpacity>
+      {showDraft && (
+        <TouchableOpacity onPress={saveDraft} style={styles.draftBtn}>
+          <Text style={styles.draftText}>
+            {draftSaved ? t('profile.draftSaved') : t('profile.saveDraft')}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity
         activeOpacity={0.85}
-        disabled={!isValid}
+        disabled={!isValid || isSubmitting}
         onPress={handleSubmit(data => onSubmit(data))}
-        style={[styles.submit, !isValid && styles.submitDisabled]}
+        style={[
+          styles.submit,
+          (!isValid || isSubmitting) && styles.submitDisabled,
+        ]}
       >
-        <Text style={styles.submitText}>{t('profile.submit')}</Text>
+        {isSubmitting ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.submitText}>
+            {submitLabel ?? t('profile.submit')}
+          </Text>
+        )}
       </TouchableOpacity>
     </>
   );

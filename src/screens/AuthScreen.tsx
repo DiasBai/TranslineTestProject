@@ -62,7 +62,13 @@ export default function AuthScreen(props: Props) {
       });
       setToken(response.token);
     } catch (error) {
-      Alert.alert(t('error'), (error as Error).message);
+      const message = error instanceof Error ? error.message : 'default';
+      Alert.alert(
+        t('auth.errorTitle'),
+        t(`auth.errors.${message}` as any, {
+          defaultValue: t('auth.errors.default'),
+        }),
+      );
     } finally {
       setIsLoading(false);
     }

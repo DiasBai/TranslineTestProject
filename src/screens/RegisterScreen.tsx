@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -28,7 +28,6 @@ import { useAuth } from '../provider/AuthProvider.tsx';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
-const CORRECT_CODE = '123456';
 
 enum Step {
   phone,
@@ -59,18 +58,13 @@ export default function RegisterScreen(props: Props) {
 
   const onClose = navigation.goBack;
 
-  const initialData: any = {};
-  const editMode = false;
-
   const { t } = useTranslation();
   const { setToken } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<Step>(editMode ? Step.profile : Step.phone);
+  const [step, setStep] = useState<Step>(Step.phone);
 
-  const [phone, setPhone] = useState(initialData?.phone ?? '');
-  const [debouncedPhone, setDebouncedPhone] = useState(
-    initialData?.phone ?? '',
-  );
+  const [phone, setPhone] = useState('');
+  const [debouncedPhone, setDebouncedPhone] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -83,55 +77,36 @@ export default function RegisterScreen(props: Props) {
   const [timer, setTimer] = useState(RESEND_SECONDS);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  const [selectedRole, setSelectedRole] = useState<Role | null>(
-    initialData?.role ?? null,
-  );
-  const [profileData, setProfileData] = useState<ProfileForm | undefined>(
-    initialData?.profile,
-  );
-
-  const onBack = useCallback(() => {
-    setStep(prevState => {
-      if (prevState === 0) {
-        navigation.goBack();
-        return prevState;
-      } else {
-        return prevState - 1;
-      }
-    });
-  }, [setStep, navigation]);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [profileData, setProfileData] = useState<ProfileForm | undefined>();
 
   const headerTitle = t('registration.headerTitle');
 
-  const persistAndComplete = useCallback(
-    async (profileForm: ProfileForm, password: string) => {
-      const saved: UserProfile = {
-        phone,
-        role: selectedRole ?? initialData?.role ?? 'customer',
-        iin: profileForm.iin,
-        profile: profileForm,
-      };
-      await saveProfile(saved);
-      const response = await authService.register(saved, password);
-      setToken(response.token);
-    },
-    [phone, selectedRole, initialData?.role],
-  );
+  const persistAndComplete = async (
+    profileForm: ProfileForm,
+    password: string,
+  ) => {
+    const saved: UserProfile = {
+      phone,
+      role: selectedRole ?? 'customer',
+      iin: profileForm.iin,
+      profile: profileForm,
+    };
 
-  const resetOtp = useCallback((focusFirst = true) => {
+    await saveProfile(saved);
+    const response = await authService.register(saved, password);
+    setToken(response.token);
+  };
+
+  const resetOtp = (focusFirst = true) => {
     setOtp(Array(OTP_LENGTH).fill(''));
     setActiveIdx(0);
     if (focusFirst) {
       setTimeout(() => inputRefs.current[0]?.focus(), 50);
     }
-  }, []);
+  };
 
-  const handleBack = useCallback(() => {
-    if (editMode) {
-      onBack();
-      return;
-    }
-
+  const handleBack = () => {
     if (step === Step.password) {
       setStep(Step.profile);
     } else if (step === Step.profile) {
@@ -146,11 +121,11 @@ export default function RegisterScreen(props: Props) {
       resetOtp(false);
       setOtpError(false);
     } else {
-      onBack();
+      navigation.goBack();
     }
-  }, [step, editMode, onBack, resetOtp]);
+  };
 
-  const handleSendCode = useCallback(async (phoneNumber: string) => {
+  const handleSendCode = async (phoneNumber: string) => {
     setIsSending(true);
     try {
       await authService.sendOtp({ phoneNumber });
@@ -160,7 +135,7 @@ export default function RegisterScreen(props: Props) {
     } finally {
       setIsSending(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     return () => clearTimeout(debounceRef.current);
@@ -172,54 +147,45 @@ export default function RegisterScreen(props: Props) {
     return () => clearInterval(id);
   }, [step, timer]);
 
-  const verifyCode = useCallback(
-    async (phoneNumber: string, digits: string[]) => {
-      try {
-        setIsLoading(true);
-        await authService.confirmOtp({ phoneNumber, code: digits.join('') });
-        setStep(Step.role);
-      } catch (e) {
-        console.log(e);
-        setOtpError(true);
-        resetOtp();
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [resetOtp],
-  );
+  const verifyCode = async (phoneNumber: string, digits: string[]) => {
+    try {
+      setIsLoading(true);
+      await authService.confirmOtp({ phoneNumber, code: digits.join('') });
+      setStep(Step.role);
+    } catch (e) {
+      console.log(e);
+      setOtpError(true);
+      resetOtp();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const handleOtpChange = useCallback(
-    (value: string, idx: number) => {
-      const digit = value.replace(/\D/g, '').slice(-1);
+  const handleOtpChange = (value: string, idx: number) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const next = [...otp];
+    next[idx] = digit;
+    setOtp(next);
+    setOtpError(false);
+
+    if (digit && idx < OTP_LENGTH - 1) {
+      inputRefs.current[idx + 1]?.focus();
+    } else if (digit && idx === OTP_LENGTH - 1) {
+      inputRefs.current[idx]?.blur();
+      verifyCode(phone, next);
+    }
+  };
+
+  const handleOtpKeyPress = (key: string, idx: number) => {
+    if (key === 'Backspace' && !otp[idx] && idx > 0) {
       const next = [...otp];
-      next[idx] = digit;
+      next[idx - 1] = '';
       setOtp(next);
-      setOtpError(false);
+      inputRefs.current[idx - 1]?.focus();
+    }
+  };
 
-      if (digit && idx < OTP_LENGTH - 1) {
-        inputRefs.current[idx + 1]?.focus();
-      } else if (digit && idx === OTP_LENGTH - 1) {
-        inputRefs.current[idx]?.blur();
-        verifyCode(phone, next);
-      }
-    },
-    [otp, phone, verifyCode],
-  );
-
-  const handleOtpKeyPress = useCallback(
-    (key: string, idx: number) => {
-      if (key === 'Backspace' && !otp[idx] && idx > 0) {
-        const next = [...otp];
-        next[idx - 1] = '';
-        setOtp(next);
-        inputRefs.current[idx - 1]?.focus();
-      }
-    },
-    [otp],
-  );
-
-  const handleResend = useCallback(async (phoneNumber: string) => {
+  const handleResend = async (phoneNumber: string) => {
     try {
       setOtpError(false);
       await authService.sendOtp({ phoneNumber });
@@ -227,7 +193,7 @@ export default function RegisterScreen(props: Props) {
     } catch (error) {
       console.error(error);
     }
-  }, []);
+  };
 
   const handleSelectRole = (role: Role) => {
     setSelectedRole(role);
@@ -235,11 +201,12 @@ export default function RegisterScreen(props: Props) {
 
   const handleProfileSubmit = (data: ProfileForm) => {
     setProfileData(data);
-    if (editMode) {
-      persistAndComplete(data);
-    } else {
-      setStep(Step.password);
-    }
+    setStep(Step.password);
+  };
+
+  const handlePasswordSubmit = async (password: string) => {
+    if (!profileData) return;
+    await persistAndComplete(profileData, password);
   };
 
   return (
@@ -250,9 +217,9 @@ export default function RegisterScreen(props: Props) {
       >
         <View style={styles.headerContainer}>
           <ScreenHeader
-            activeSteps={editMode ? 3 : getActiveSegments(step)}
+            activeSteps={getActiveSegments(step)}
             onBack={handleBack}
-            onClose={editMode ? onBack : onClose}
+            onClose={onClose}
             title={headerTitle}
             totalSteps={4}
           />
@@ -322,21 +289,15 @@ export default function RegisterScreen(props: Props) {
 
           {step === Step.profile && (
             <ProfileStep
-              initialProfile={profileData ?? initialData?.profile}
+              initialProfile={profileData}
               phone={phone}
-              role={selectedRole ?? initialData?.role ?? 'customer'}
+              role={selectedRole ?? 'customer'}
               onSubmit={handleProfileSubmit}
             />
           )}
 
-          {step === Step.password && !editMode && (
-            <PasswordStep
-              onSubmit={password => {
-                if (profileData) {
-                  persistAndComplete(profileData, password);
-                }
-              }}
-            />
+          {step === Step.password && (
+            <PasswordStep onSubmit={handlePasswordSubmit} />
           )}
         </ScrollView>
       </KeyboardAvoidingView>

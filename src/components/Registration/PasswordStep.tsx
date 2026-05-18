@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -12,13 +18,14 @@ import {
 } from './passwordStepValidation';
 
 type Props = {
-  onSubmit: (password: string) => void;
+  onSubmit: (password: string) => Promise<void> | void;
 };
 
 function PasswordStep({ onSubmit }: Props) {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     control,
@@ -32,6 +39,17 @@ function PasswordStep({ onSubmit }: Props) {
   });
 
   const password = watch('password');
+
+  const handlePasswordSubmit = async ({ password: pw }: PasswordForm) => {
+    setIsSubmitting(true);
+    try {
+      await onSubmit(pw);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -77,11 +95,18 @@ function PasswordStep({ onSubmit }: Props) {
 
       <TouchableOpacity
         activeOpacity={0.85}
-        disabled={!isValid}
-        onPress={handleSubmit(({ password: pw }) => onSubmit(pw))}
-        style={[styles.submit, !isValid && styles.submitDisabled]}
+        disabled={!isValid || isSubmitting}
+        onPress={handleSubmit(handlePasswordSubmit)}
+        style={[
+          styles.submit,
+          (!isValid || isSubmitting) && styles.submitDisabled,
+        ]}
       >
-        <Text style={styles.submitText}>{t('password.submit')}</Text>
+        {isSubmitting ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.submitText}>{t('password.submit')}</Text>
+        )}
       </TouchableOpacity>
     </>
   );

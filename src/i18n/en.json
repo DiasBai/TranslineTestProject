@@ -14,7 +14,13 @@
     "signUp": "Sign up",
     "forgotPassword": "Forgot password?",
     "questions": "Have questions?",
-    "supportPhone": "support phone: +7 (999) 999-99-99"
+    "supportPhone": "support phone: +7 (999) 999-99-99",
+    "errorTitle": "Error",
+    "errors": {
+      "user_not_found": "No user found with this phone number",
+      "wrong_credentials": "Incorrect phone number or password",
+      "default": "Could not sign in. Please try again"
+    }
   },
   "registration": {
     "headerTitle": "Registration",
@@ -61,6 +67,8 @@
     "roleCustomer": "Customer",
     "roleTransport": "Carrier",
     "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
     "logout": "Log out"
   },
   "profile": {
