@@ -1,15 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import OtpStep from '../components/Registration/OtpStep';
 import PasswordStep from '../components/Registration/PasswordStep';
@@ -211,26 +209,23 @@ export default function RegisterScreen(props: Props) {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <View style={styles.headerContainer}>
+        <ScreenHeader
+          activeSteps={getActiveSegments(step)}
+          onBack={handleBack}
+          onClose={onClose}
+          title={headerTitle}
+          totalSteps={4}
+        />
+      </View>
+
+      <KeyboardAwareScrollView
+        bounces={false}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
         style={styles.flex}
       >
-        <View style={styles.headerContainer}>
-          <ScreenHeader
-            activeSteps={getActiveSegments(step)}
-            onBack={handleBack}
-            onClose={onClose}
-            title={headerTitle}
-            totalSteps={4}
-          />
-        </View>
-
-        <ScrollView
-          bounces={false}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
           {step === Step.phone && (
             <PhoneStep
               focused={phoneFocused}
@@ -299,8 +294,7 @@ export default function RegisterScreen(props: Props) {
           {step === Step.password && (
             <PasswordStep onSubmit={handlePasswordSubmit} />
           )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

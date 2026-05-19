@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
 } from 'react-native';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { authService } from '../api/authService.ts';
 import AuthAgreementField from '../components/Auth/AuthAgreementField';
@@ -80,43 +78,35 @@ export default function AuthScreen(props: Props) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}
+      <KeyboardAwareScrollView
+        bounces={false}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          bounces={false}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <AuthLogo />
-          <AuthPhoneField control={control} errors={errors} />
-          <AuthPasswordField
-            control={control}
-            errors={errors}
-            isPasswordVisible={isPasswordVisible}
-            onTogglePasswordVisibility={() =>
-              setIsPasswordVisible(prev => !prev)
-            }
-          />
-          <AuthAgreementField control={control} errors={errors} />
-          <AuthSubmitButton
-            disabled={!isValid || isLoading}
-            loading={isLoading}
-            onPress={handleSubmit(onSubmit)}
-          />
-          <AuthSecondaryLinks onOpenRegistration={onOpenRegistration} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <AuthLogo />
+        <AuthPhoneField control={control} errors={errors} />
+        <AuthPasswordField
+          control={control}
+          errors={errors}
+          isPasswordVisible={isPasswordVisible}
+          onTogglePasswordVisibility={() =>
+            setIsPasswordVisible(prev => !prev)
+          }
+        />
+        <AuthAgreementField control={control} errors={errors} />
+        <AuthSubmitButton
+          disabled={!isValid || isLoading}
+          loading={isLoading}
+          onPress={handleSubmit(onSubmit)}
+        />
+        <AuthSecondaryLinks onOpenRegistration={onOpenRegistration} />
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-  },
   safeArea: {
     backgroundColor: Colors.ivory,
     flex: 1,

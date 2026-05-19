@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import ProfileStep, {
   type ProfileForm,
@@ -131,7 +131,7 @@ function ProfileScreen() {
   if (isEditing) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView
+        <KeyboardAwareScrollView
           bounces={false}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -155,7 +155,7 @@ function ProfileScreen() {
             submitLabel={t('profileView.save')}
             onSubmit={handleProfileSubmit}
           />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     );
   }
